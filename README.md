@@ -5,46 +5,56 @@ This program is designed to address the issue of matching meteorological station
 The script employs Levenshtein distance (edit distance) to compare transliterated station names with unique city names from the KLADR database. Once a match is found, the program links the station names to the corresponding cities and retrieves the KLADR codes for those cities. This allows for an accurate update and association between the meteorological stations and their respective cities.
 
 ## Functional Description
-The program performs the following steps:
-1. Retrieves a list of distinct cities from the KLADR database that have the most recent actual date.
-2. Retrieves a list of meteorological stations from the `al_babkina_meteostanse_5` table where the station names are missing.
-3. Applies transliteration rules to convert station names from Latin to Cyrillic.
-4. Uses fuzzy string matching to compare transliterated station names with the list of cities in the KLADR database.
-5. Identifies the best matches for each station and updates the station's name field in the database.
-6. Saves the results back to the database and optionally exports the data to a CSV file.
 
-## How It Works
-1. **Retrieving City Names:** The program queries the KLADR database to retrieve a list of all cities that have the latest actual date, ensuring only valid and up-to-date data is used.
-2. **Transliterating Station Names:** The station names are first transliterated from Latin to Cyrillic using predefined transliteration rules, ensuring better matching with the city names.
-3. **Fuzzy Matching:** The transliterated station names are then compared to the list of cities from the KLADR database using fuzzy matching techniques (Levenshtein distance, fuzzy string matching algorithms such as `fuzz.ratio`, `fuzz.token_sort_ratio`, and `fuzz.token_set_ratio`).
-4. **Matching and Updating:** Once the best matches are found, the program updates the station names with the corresponding city names and retrieves the KLADR code for further reference.
-5. **Saving Results:** The updated station data is saved back into the database, and the results are optionally exported to a CSV file for review.
+The script follows these main steps:
+1. **Database Connection**: Connects to an Oracle database using SQLAlchemy and Oracle's `oracledb` driver.
+2. **Query Execution**: Executes SQL queries to retrieve city names from the `kladr` table and station names with `NULL` values in the `name` field from the `al_babkina_meteostanse_5` table.
+3. **Transliteration**: Converts station names from Latin characters to Cyrillic using predefined transliteration rules.
+4. **Exact Matching**: Matches transliterated station names to city names from the `kladr` table, and generates `UPDATE` statements for exact matches.
+5. **Fuzzy Matching**: Uses fuzzy string matching to find the best possible matches for station names that were not exactly matched.
+6. **Data Insertion**: Saves the processed station data with updated names into a new table `al_babkina_meteostanse_111`.
+7. **CSV Export**: Exports the station data to a CSV file for further analysis or use.
 
 ## Input Structure
-To run the program, the following parameters need to be provided:
-1. Database credentials: Username, Password, Database DSN (Data Source Name).
-2. Tables: `diasoft_test.kladr` for city data and `al_babkina_meteostanse_5` for meteorological station data.
+
+1. **Database Connection**:
+   - `username`: Username for the Oracle database connection.
+   - `password`: Password for the Oracle database connection.
+   - `dsn`: Data Source Name (DSN) for connecting to the Oracle database.
+
+2. **Predefined Transliteration Rules**: 
+   - A dictionary that maps Latin letter combinations to their Cyrillic equivalents for transliterating station names.
+
+3. **Tables**:
+   - `kladr`: Contains the list of city names (and their actual dates).
+   - `al_babkina_meteostanse_5`: Contains the station names (with some missing values for `name`).
 
 ## Technical Requirements
-To run the program, the following are required:
-1. Python 3.x
-2. Installed libraries: `sqlalchemy`, `pandas`, `fuzzywuzzy`, `oracledb`, `re`, and `sys`.
-3. Oracle Database with the following tables: `diasoft_test.kladr` (containing city names) and `al_babkina_meteostanse_5` (containing meteorological station names).
+
+1. **Libraries**:
+   - `SQLAlchemy`: For connecting to the Oracle database and executing SQL queries.
+   - `pandas`: For data manipulation and handling SQL query results.
+   - `oracledb`: Oracle database driver used by SQLAlchemy.
+   - `fuzzywuzzy`: For performing fuzzy matching of station names to city names.
+   - `re`: Regular expressions used for transliteration.
+
+2. **Oracle Database**: The script connects to an Oracle database containing the `kladr` table (with city names) and the `al_babkina_meteostanse_5` table (with station names that need updating).
 
 ## Usage
-1. Modify the database credentials (`username`, `password`, and `dsn`) to connect to your Oracle database.
-2. Run the script, and it will:
-   - Retrieve a list of city names from the KLADR database.
-   - Transliterates station names from Latin to Cyrillic.
-   - Perform fuzzy matching to find the closest matches between station names and cities.
-   - Update the station names in the database with the matched city names.
-   - Optionally export the data to a CSV file.
+
+1. Modify the `username`, `password`, and `dsn` values in the script to connect to your Oracle database.
+2. Ensure that the database contains the `kladr` table (with city names) and the `al_babkina_meteostanse_5` table (with station names to be updated).
+3. Run the script, which will:
+   - Transliterating station names from Latin to Cyrillic.
+   - Match station names to city names in the `kladr` table using both exact and fuzzy matching.
+   - Generate SQL `UPDATE` statements to update the station names.
+   - Insert the updated data into a new table `al_babkina_meteostanse_111`.
+   - Export the processed data to a CSV file.
 
 ## Example Output
-After running the script, the following output can be expected:
-- A list of SQL `UPDATE` statements for the stations that were successfully matched to city names.
-- The updated stations table, now with correct city names, optionally saved as a CSV file.
-- The exported CSV will contain columns like `id_station`, `station`, `STATION_RU`, and `reestr` (matched city names).
+
+The script will print SQL `UPDATE` statements for stations with exact name matches. Additionally, it will apply fuzzy matching for stations where no exact match was found, using the `fuzzywuzzy` library. It will also export the processed station data into a CSV file, such as `station.csv`.
 
 ## Conclusion
-This tool efficiently matches meteorological station names, initially written in Latin, to their corresponding cities in the KLADR registry. It ensures the accurate linking of station data, improving the quality of the database by using transliteration and fuzzy matching techniques. The program helps automate the process of updating station names in the database and supports further data analysis and usage.
+
+This script helps automate the process of updating station names based on transliteration and matching with city names in the `kladr` table. The use of fuzzy matching allows for a more flexible and accurate update process, ensuring that even imperfectly matched station names are updated correctly. The processed data is saved back to the database and exported to a CSV file for further use.
